@@ -359,3 +359,120 @@ class SnakeGame:
             pos = i * CELL_SIZE
             self.canvas.create_line(pos, 0, pos, BOARD_SIZE, fill=COLOR_GRID_LINE)
             self.canvas.create_line(0, pos, BOARD_SIZE, pos, fill=COLOR_GRID_LINE)
+
+
+
+
+
+    # ------------------------------------------------------------------
+    # Game lifecycle
+    # ------------------------------------------------------------------
+    def start_game(self, difficulty):
+        """Starts a brand-new game at the chosen difficulty."""
+        self.difficulty = difficulty
+        self.show_game_screen()
+        self.reset_game()
+
+    def reset_game(self):
+        """Resets all game state for a fresh run (used by Start and Restart).
+        Never touches the high score."""
+        self.stop_game_loop()
+        self.canvas.delete("overlay")
+
+        center = GRID_COUNT // 2
+        self.snake = [(center - 1, center), (center - 2, center), (center - 3, center)]
+        self.direction = "Right"
+        self.next_direction = "Right"
+        self.score = 0
+        self.food_type = "small"
+        self.small_eaten_since_big = 0
+        self.delay = DIFFICULTY_SPEEDS[self.difficulty]
+        self.paused = False
+        self.running = True
+
+        self.pause_button.config(text="Pause")
+        self.update_score_labels()
+
+        self.create_food()
+        self.redraw_board()
+        self.game_loop_id = self.root.after(self.delay, self.game_loop)
+
+    def restart_game(self):
+        """Restarts the current game without touching the high score."""
+        self.reset_game()
+
+    def stop_game_loop(self):
+        """Cancels any pending scheduled game loop call, if one exists."""
+        if self.game_loop_id is not None:
+            try:
+                self.root.after_cancel(self.game_loop_id)
+            except ValueError:
+                pass
+            self.game_loop_id = None
+
+    # ------------------------------------------------------------------
+    # Input handling
+    # ------------------------------------------------------------------
+    def on_key_press(self, event):
+        key = event.keysym
+
+        if not self.running:
+            return  # Ignore game keys when no game is on screen
+
+        direction_map = {
+            "Up": "Up", "w": "Up", "W": "Up",
+            "Down": "Down", "s": "Down", "S": "Down",
+            "Left": "Left", "a": "Left", "A": "Left",
+            "Right": "Right", "d": "Right", "D": "Right",
+        }
+        opposite = {"Up": "Down", "Down": "Up", "Left": "Right", "Right": "Left"}
+
+        if key == "space":
+            self.toggle_pause()
+            return
+
+        if self.paused:
+            return
+
+        if key in direction_map:
+            new_dir = direction_map[key]
+            # Prevent an immediate 180-degree turn into the snake's own body
+            if new_dir != opposite.get(self.direction):
+                self.next_direction = new_dir
+
+    # ------------------------------------------------------------------
+    # Pause / resume
+    # ------------------------------------------------------------------
+    def toggle_pause(self):
+        if not self.running:
+            return
+        if self.paused:
+            self.resume_game()
+        else:
+            self.pause_game()
+
+    def pause_game(self):
+        self.paused = True
+        self.pause_button.config(text="Resume")
+        self.stop_game_loop()
+        self.show_pause_overlay()
+
+    def resume_game(self):
+        self.paused = False
+        self.pause_button.config(text="Pause")
+        self.canvas.delete("overlay")
+        self.game_loop_id = self.root.after(self.delay, self.game_loop)
+
+    def show_pause_overlay(self):
+        self.canvas.delete("overlay")
+        cx, cy = BOARD_SIZE // 2, BOARD_SIZE // 2
+        self.canvas.create_rectangle(
+            0, 0, BOARD_SIZE, BOARD_SIZE, fill=COLOR_OVERLAY_BG,
+            stipple="gray50", outline="", tags="overlay"
+        )
+        self.canvas.create_text(
+            cx, cy - 40, text="PAUSED", font=FONT_HEADING,
+            fill=COLOR_TEXT, tags="overlay"
+        )
+        resume_btn = make_button(self.canvas, "Resume", self.resume_game, width=14)
+        self.canvas.create_window(cx, cy + 20, window=resume_btn, tags="overlay")

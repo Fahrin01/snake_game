@@ -1,0 +1,82 @@
+"""
+Snake Game
+==========
+A complete, polished classic Snake Game built with Python's standard
+library (Tkinter only - no external dependencies, no internet required).
+
+Run with:
+    python main.py
+"""
+
+import tkinter as tk
+import json
+import os
+import random
+
+# ----------------------------------------------------------------------
+# Constants
+# ----------------------------------------------------------------------
+
+WINDOW_TITLE = "Snake Game"
+
+BOARD_SIZE = 600                       # Width/height of the square board (px)
+CELL_SIZE = 20                         # Size of each grid cell (px)
+GRID_COUNT = BOARD_SIZE // CELL_SIZE   # Number of cells per row/column
+
+SCORE_PER_FOOD = 10
+BIG_FOOD_SCORE = 30                    # points awarded by the special big ball
+BIG_FOOD_EVERY = 5                     # a big ball appears after this many small balls
+SPEED_INCREASE_STEP = 2                # ms shaved off the delay per food eaten
+MIN_DELAY = 40                         # fastest possible delay (ms) - speed cap
+
+HIGHSCORE_FILE = "highscore.json"
+
+DIFFICULTY_SPEEDS = {
+    "Easy": 150,
+    "Medium": 100,
+    "Hard": 70,
+}
+
+MIN_WINDOW_WIDTH = 660
+MIN_WINDOW_HEIGHT = 780
+
+# ---- Color theme (dark, modern) ----
+COLOR_BG = "#1a1a26"
+COLOR_PANEL = "#252538"
+COLOR_PANEL_ALT = "#2c2c44"
+COLOR_BOARD_BG = "#101018"
+COLOR_GRID_LINE = "#20202e"
+COLOR_BOARD_BORDER = "#3a3a55"
+
+# Snake - base / light(highlight) / dark(shadow) tones for a 3D beveled look
+COLOR_SNAKE_HEAD = "#7CFC93"
+COLOR_SNAKE_HEAD_LIGHT = "#C8FFD4"
+COLOR_SNAKE_HEAD_DARK = "#2E9E4F"
+
+COLOR_SNAKE_BODY = "#43A047"
+COLOR_SNAKE_BODY_LIGHT = "#7EDB86"
+COLOR_SNAKE_BODY_DARK = "#245C28"
+
+# Small food (apple-red sphere)
+COLOR_FOOD = "#FF5252"
+COLOR_FOOD_LIGHT = "#FFB3B3"
+COLOR_FOOD_DARK = "#B71C1C"
+
+# Big / bonus food (golden sphere)
+COLOR_BIG_FOOD = "#FFC107"
+COLOR_BIG_FOOD_LIGHT = "#FFF3C4"
+COLOR_BIG_FOOD_DARK = "#B8860B"
+
+COLOR_TEXT = "#EAEAEA"
+COLOR_SUBTEXT = "#9A9AB0"
+COLOR_ACCENT = "#4CAF50"
+COLOR_BUTTON_BG = "#2e2e42"
+COLOR_BUTTON_HOVER = "#3a3a55"
+COLOR_OVERLAY_BG = "#000000"
+
+FONT_TITLE = ("Segoe UI", 34, "bold")
+FONT_SUBTITLE = ("Segoe UI", 12)
+FONT_HEADING = ("Segoe UI", 22, "bold")
+FONT_BODY = ("Segoe UI", 12)
+FONT_BUTTON = ("Segoe UI", 13, "bold")
+FONT_SCORE = ("Segoe UI", 13, "bold")

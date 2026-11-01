@@ -121,3 +121,61 @@ def make_button(parent, text, command, width=20, bg=COLOR_BUTTON_BG,
     btn.bind("<Enter>", on_enter)
     btn.bind("<Leave>", on_leave)
     return btn
+
+
+
+    
+
+# ----------------------------------------------------------------------
+# Main application class
+# ----------------------------------------------------------------------
+class SnakeGame:
+    """Owns every screen, the game state and all game logic."""
+
+    def __init__(self, root):
+        self.root = root
+        self.root.title(WINDOW_TITLE)
+        self.root.configure(bg=COLOR_BG)
+        # The window can now be freely resized/maximized. The game board
+        # itself stays a fixed, consistent size, but the surrounding
+        # frames re-center themselves as the window grows or shrinks.
+        self.root.resizable(True, True)
+        self.root.minsize(MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT)
+        self.root.geometry(f"{MIN_WINDOW_WIDTH}x{MIN_WINDOW_HEIGHT}")
+
+        # ---- Persistent data ----
+        self.high_score = self.load_high_score()
+
+        # ---- Game state ----
+        self.difficulty = "Medium"
+        self.snake = []
+        self.direction = "Right"
+        self.next_direction = "Right"
+        self.food = None
+        self.food_type = "small"          # "small" or "big"
+        self.small_eaten_since_big = 0    # counts small balls toward the next big ball
+        self.score = 0
+        self.delay = DIFFICULTY_SPEEDS[self.difficulty]
+        self.running = False
+        self.paused = False
+        self.game_loop_id = None
+
+        # ---- Build every screen up front, then show the menu ----
+        self.menu_frame = tk.Frame(self.root, bg=COLOR_BG)
+        self.difficulty_frame = tk.Frame(self.root, bg=COLOR_BG)
+        self.howto_frame = tk.Frame(self.root, bg=COLOR_BG)
+        self.game_frame = tk.Frame(self.root, bg=COLOR_BG)
+
+        self.build_menu_screen()
+        self.build_difficulty_screen()
+        self.build_howto_screen()
+        self.build_game_screen()
+
+        # Handle the window's close button safely
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
+
+        # Global key bindings. Game-specific keys are only acted on
+        # while a game is actually running (see on_key_press).
+        self.root.bind("<Key>", self.on_key_press)
+
+        self.show_main_menu()

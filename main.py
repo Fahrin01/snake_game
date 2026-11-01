@@ -179,3 +179,35 @@ class SnakeGame:
         self.root.bind("<Key>", self.on_key_press)
 
         self.show_main_menu()
+
+
+        
+    # ------------------------------------------------------------------
+    # High score persistence
+    # ------------------------------------------------------------------
+    def load_high_score(self):
+        """Loads the high score from a local JSON file, handling any
+        missing or corrupted file without crashing the program."""
+        if not os.path.exists(HIGHSCORE_FILE):
+            self.save_high_score(0)
+            return 0
+        try:
+            with open(HIGHSCORE_FILE, "r") as f:
+                data = json.load(f)
+                score = data.get("high_score", 0)
+                if not isinstance(score, int) or score < 0:
+                    return 0
+                return score
+        except (json.JSONDecodeError, OSError, ValueError, AttributeError):
+            # File is corrupted / unreadable - reset it instead of crashing
+            self.save_high_score(0)
+            return 0
+
+    def save_high_score(self, score):
+        """Writes the high score to a local JSON file. Never crashes the
+        game even if the disk write fails for some reason."""
+        try:
+            with open(HIGHSCORE_FILE, "w") as f:
+                json.dump({"high_score": score}, f)
+        except OSError:
+            pass  # Not fatal - the game just won't persist this time

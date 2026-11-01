@@ -476,3 +476,98 @@ class SnakeGame:
         )
         resume_btn = make_button(self.canvas, "Resume", self.resume_game, width=14)
         self.canvas.create_window(cx, cy + 20, window=resume_btn, tags="overlay")
+
+
+
+
+    # ------------------------------------------------------------------
+    # Core game loop (driven by Tkinter's after(), never a blocking loop)
+    # ------------------------------------------------------------------
+    def game_loop(self):
+        if not self.running or self.paused:
+            return
+
+        self.move_snake()
+
+        if self.check_collision():
+            self.game_over()
+            return
+
+        self.check_food()
+        self.redraw_board()
+
+        self.game_loop_id = self.root.after(self.delay, self.game_loop)
+
+    def move_snake(self):
+        """Advances the snake by one cell in the current direction."""
+        self.direction = self.next_direction
+        head_x, head_y = self.snake[0]
+
+        move_deltas = {
+            "Up": (0, -1),
+            "Down": (0, 1),
+            "Left": (-1, 0),
+            "Right": (1, 0),
+        }
+        dx, dy = move_deltas[self.direction]
+        new_head = (head_x + dx, head_y + dy)
+
+        self.snake.insert(0, new_head)
+        # Only drop the tail if we did NOT just eat food (growth = keep tail)
+        if new_head != self.food:
+            self.snake.pop()
+
+    def check_collision(self):
+        """Returns True if the snake has hit a wall or its own body."""
+        head_x, head_y = self.snake[0]
+
+        if head_x < 0 or head_x >= GRID_COUNT or head_y < 0 or head_y >= GRID_COUNT:
+            return True
+        if self.snake[0] in self.snake[1:]:
+            return True
+        return False
+
+    def check_food(self):
+        """Handles eating food: score, new food, and a small speed bump.
+
+        Every BIG_FOOD_EVERY small balls eaten, the next ball spawned is a
+        big bonus ball worth more points. After the big ball is eaten, the
+        game goes back to spawning normal small balls.
+        """
+        if self.snake[0] != self.food:
+            return
+
+        if self.food_type == "big":
+            self.score += BIG_FOOD_SCORE
+        else:
+            self.score += SCORE_PER_FOOD
+            self.small_eaten_since_big += 1
+
+        self.update_score_labels()
+
+        # Decide what the NEXT ball should be
+        if self.food_type == "small" and self.small_eaten_since_big >= BIG_FOOD_EVERY:
+            self.food_type = "big"
+            self.small_eaten_since_big = 0
+        else:
+            self.food_type = "small"
+
+        self.create_food()
+
+        if self.delay > MIN_DELAY:
+            self.delay = max(MIN_DELAY, self.delay - SPEED_INCREASE_STEP)
+
+    def create_food(self):
+        """Places food on a random empty cell - never on the snake's body."""
+        available_cells = [
+            (x, y)
+            for x in range(GRID_COUNT)
+            for y in range(GRID_COUNT)
+            if (x, y) not in self.snake
+        ]
+        if available_cells:
+            self.food = random.choice(available_cells)
+        else:
+            # The snake fills the entire board - an effective "win" state
+            self.food = None
+            self.game_over()

@@ -688,3 +688,68 @@ class SnakeGame:
         self.menu_high_score_label.config(text=f"High Score: {self.high_score}")
 
 
+
+    # ------------------------------------------------------------------
+    # Game over
+    # ------------------------------------------------------------------
+    def game_over(self):
+        self.running = False
+        self.stop_game_loop()
+
+        if self.score > self.high_score:
+            self.high_score = self.score
+            self.save_high_score(self.high_score)
+
+        self.update_score_labels()
+        self.show_game_over_overlay()
+
+    def show_game_over_overlay(self):
+        self.canvas.delete("overlay")
+        cx = BOARD_SIZE // 2
+
+        message = random.choice(["Nice Try!", "Great Run!", "Can you beat your high score?"])
+
+        self.canvas.create_rectangle(
+            0, 0, BOARD_SIZE, BOARD_SIZE, fill=COLOR_OVERLAY_BG,
+            stipple="gray50", outline="", tags="overlay"
+        )
+        self.canvas.create_text(
+            cx, 140, text="GAME OVER", font=FONT_HEADING,
+            fill=COLOR_FOOD, tags="overlay"
+        )
+        self.canvas.create_text(
+            cx, 180, text=message, font=FONT_BODY,
+            fill=COLOR_SUBTEXT, tags="overlay"
+        )
+        self.canvas.create_text(
+            cx, 225, text=f"Score: {self.score}", font=FONT_SCORE,
+            fill=COLOR_TEXT, tags="overlay"
+        )
+        self.canvas.create_text(
+            cx, 255, text=f"High Score: {self.high_score}", font=FONT_SCORE,
+            fill=COLOR_ACCENT, tags="overlay"
+        )
+
+        play_again_btn = make_button(self.canvas, "Play Again", self.restart_game, width=16)
+        self.canvas.create_window(cx, 320, window=play_again_btn, tags="overlay")
+
+        menu_btn = make_button(self.canvas, "Main Menu", self.show_main_menu, width=16)
+        self.canvas.create_window(cx, 375, window=menu_btn, tags="overlay")
+
+    # ------------------------------------------------------------------
+    # Shutdown
+    # ------------------------------------------------------------------
+    def on_close(self):
+        """Handles the window's close event safely, cancelling any pending loop."""
+        self.stop_game_loop()
+        self.root.destroy()
+
+
+def main():
+    root = tk.Tk()
+    SnakeGame(root)
+    root.mainloop()
+
+
+if __name__ == "__main__":
+    main()

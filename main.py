@@ -304,3 +304,58 @@ class SnakeGame:
 
 
 
+
+    def build_game_screen(self):
+        # ---- Top score panel ----
+        panel = tk.Frame(self.game_frame, bg=COLOR_PANEL, height=60)
+        panel.pack(fill="x")
+
+        self.score_label = tk.Label(
+            panel, text="Score: 0", font=FONT_SCORE, bg=COLOR_PANEL, fg=COLOR_TEXT
+        )
+        self.score_label.pack(side="left", padx=20, pady=12)
+
+        self.highscore_label = tk.Label(
+            panel, text=f"High Score: {self.high_score}",
+            font=FONT_SCORE, bg=COLOR_PANEL, fg=COLOR_ACCENT
+        )
+        self.highscore_label.pack(side="right", padx=20, pady=12)
+
+        # ---- Control buttons ----
+        controls = tk.Frame(self.game_frame, bg=COLOR_BG)
+        controls.pack(fill="x", pady=6)
+
+        self.pause_button = make_button(
+            controls, "Pause", self.toggle_pause, width=10, font=FONT_BODY
+        )
+        self.pause_button.pack(side="left", padx=20)
+
+        make_button(
+            controls, "Restart", self.restart_game, width=10, font=FONT_BODY
+        ).pack(side="left", padx=6)
+
+        make_button(
+            controls, "Main Menu", self.show_main_menu, width=10, font=FONT_BODY
+        ).pack(side="right", padx=20)
+
+        # ---- Canvas (game board), wrapped in a colored bezel border ----
+        canvas_border = tk.Frame(self.game_frame, bg=COLOR_BOARD_BORDER, padx=4, pady=4)
+        canvas_border.pack(pady=10)
+
+        self.canvas = tk.Canvas(
+            canvas_border, width=BOARD_SIZE, height=BOARD_SIZE,
+            bg=COLOR_BOARD_BG, highlightthickness=0
+        )
+        self.canvas.pack()
+
+        self.draw_grid_lines()
+
+    # ------------------------------------------------------------------
+    # Drawing helpers
+    # ------------------------------------------------------------------
+    def draw_grid_lines(self):
+        """Draws subtle grid lines once; they sit behind the snake/food."""
+        for i in range(1, GRID_COUNT):
+            pos = i * CELL_SIZE
+            self.canvas.create_line(pos, 0, pos, BOARD_SIZE, fill=COLOR_GRID_LINE)
+            self.canvas.create_line(0, pos, BOARD_SIZE, pos, fill=COLOR_GRID_LINE)

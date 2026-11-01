@@ -571,3 +571,120 @@ class SnakeGame:
             # The snake fills the entire board - an effective "win" state
             self.food = None
             self.game_over()
+
+
+
+
+    # ------------------------------------------------------------------
+    # Rendering
+    # ------------------------------------------------------------------
+    def redraw_board(self):
+        self.canvas.delete("snake", "food")
+        self.draw_food()
+        self.draw_snake()
+
+    def draw_3d_block(self, x1, y1, x2, y2, light, base, dark, tag):
+        """Draws one grid cell as a small beveled 3D-looking cube.
+
+        Technique: a dark full-size rectangle acts as the block's shadow
+        edge, a slightly inset lighter rectangle forms the main face (so a
+        thin dark sliver remains visible along the bottom/right = shadow),
+        and a thin bright strip along the top/left simulates a light
+        source hitting the block, giving it a raised, chunky 3D feel.
+        """
+        self.canvas.create_rectangle(x1, y1, x2, y2, fill=dark, outline="", tags=tag)
+        self.canvas.create_rectangle(
+            x1, y1, x2 - 2, y2 - 2, fill=base, outline="", tags=tag
+        )
+        self.canvas.create_rectangle(
+            x1, y1, x2 - 2, y1 + 3, fill=light, outline="", tags=tag
+        )
+        self.canvas.create_rectangle(
+            x1, y1, x1 + 3, y2 - 2, fill=light, outline="", tags=tag
+        )
+
+    def draw_snake(self):
+        for index, (x, y) in enumerate(self.snake):
+            x1, y1 = x * CELL_SIZE, y * CELL_SIZE
+            x2, y2 = x1 + CELL_SIZE, y1 + CELL_SIZE
+            pad = 1  # tiny gap between segments so each block reads clearly
+
+            if index == 0:
+                self.draw_3d_block(
+                    x1 + pad, y1 + pad, x2 - pad, y2 - pad,
+                    COLOR_SNAKE_HEAD_LIGHT, COLOR_SNAKE_HEAD, COLOR_SNAKE_HEAD_DARK,
+                    "snake"
+                )
+                self.draw_eyes(x1, y1)
+            else:
+                self.draw_3d_block(
+                    x1 + pad, y1 + pad, x2 - pad, y2 - pad,
+                    COLOR_SNAKE_BODY_LIGHT, COLOR_SNAKE_BODY, COLOR_SNAKE_BODY_DARK,
+                    "snake"
+                )
+
+    def draw_eyes(self, x1, y1):
+        """Draws two small glossy eyes on the snake's head, oriented by direction."""
+        eye_radius = 2
+        offsets = {
+            "Up": [(6, 6), (CELL_SIZE - 6, 6)],
+            "Down": [(6, CELL_SIZE - 6), (CELL_SIZE - 6, CELL_SIZE - 6)],
+            "Left": [(6, 6), (6, CELL_SIZE - 6)],
+            "Right": [(CELL_SIZE - 6, 6), (CELL_SIZE - 6, CELL_SIZE - 6)],
+        }
+        for ox, oy in offsets.get(self.direction, offsets["Right"]):
+            ex, ey = x1 + ox, y1 + oy
+            self.canvas.create_oval(
+                ex - eye_radius, ey - eye_radius, ex + eye_radius, ey + eye_radius,
+                fill=COLOR_BOARD_BG, outline="", tags="snake"
+            )
+            # Tiny highlight dot so the eye looks glossy rather than flat
+            self.canvas.create_oval(
+                ex - 1, ey - 1, ex, ey, fill=COLOR_TEXT, outline="", tags="snake"
+            )
+
+    def draw_sphere(self, x1, y1, x2, y2, light, base, dark, tag):
+        """Draws a food ball as a small glossy 3D sphere.
+
+        Technique: a dark circle sits behind as the shadowed edge, a
+        slightly smaller base-colored circle offset toward the top-left
+        sits on top (leaving a dark crescent at the bottom-right), and a
+        small bright oval near the top-left fakes a specular highlight.
+        """
+        self.canvas.create_oval(x1, y1, x2, y2, fill=dark, outline="", tags=tag)
+        self.canvas.create_oval(
+            x1, y1, x2 - 2, y2 - 2, fill=base, outline="", tags=tag
+        )
+        w = x2 - x1
+        hx1, hy1 = x1 + w * 0.20, y1 + w * 0.18
+        hx2, hy2 = x1 + w * 0.55, y1 + w * 0.50
+        self.canvas.create_oval(hx1, hy1, hx2, hy2, fill=light, outline="", tags=tag)
+
+    def draw_food(self):
+        if self.food is None:
+            return
+        x, y = self.food
+        x1, y1 = x * CELL_SIZE, y * CELL_SIZE
+        x2, y2 = x1 + CELL_SIZE, y1 + CELL_SIZE
+
+        if self.food_type == "big":
+            # The bonus ball is drawn larger, bulging slightly into
+            # neighboring cells, so it clearly stands out from normal food.
+            grow = 5
+            self.draw_sphere(
+                x1 - grow, y1 - grow, x2 + grow, y2 + grow,
+                COLOR_BIG_FOOD_LIGHT, COLOR_BIG_FOOD, COLOR_BIG_FOOD_DARK, "food"
+            )
+        else:
+            pad = 3
+            self.draw_sphere(
+                x1 + pad, y1 + pad, x2 - pad, y2 - pad,
+                COLOR_FOOD_LIGHT, COLOR_FOOD, COLOR_FOOD_DARK, "food"
+            )
+
+    def update_score_labels(self):
+        self.score_label.config(text=f"Score: {self.score}")
+        self.highscore_label.config(text=f"High Score: {self.high_score}")
+        self.menu_high_score_label.config(text=f"High Score: {self.high_score}")
+
+

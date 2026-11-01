@@ -80,3 +80,44 @@ FONT_HEADING = ("Segoe UI", 22, "bold")
 FONT_BODY = ("Segoe UI", 12)
 FONT_BUTTON = ("Segoe UI", 13, "bold")
 FONT_SCORE = ("Segoe UI", 13, "bold")
+
+
+
+
+# ----------------------------------------------------------------------
+# Button helper
+# ----------------------------------------------------------------------
+def make_button(parent, text, command, width=20, bg=COLOR_BUTTON_BG,
+                 fg=COLOR_TEXT, hover_bg=COLOR_BUTTON_HOVER, font=FONT_BUTTON):
+    """
+    Creates a flat, modern-looking button with a hover effect.
+
+    Plain Tkinter buttons cannot have true rounded corners, so this
+    approximates a clean "rounded-button" feel using flat styling,
+    generous padding and a hover color change.
+    """
+    btn = tk.Button(
+        parent,
+        text=text,
+        command=command,
+        font=font,
+        bg=bg,
+        fg=fg,
+        activebackground=hover_bg,
+        activeforeground=fg,
+        relief="flat",
+        bd=0,
+        width=width,
+        pady=10,
+        cursor="hand2",
+    )
+
+    def on_enter(_event):
+        btn["bg"] = hover_bg
+
+    def on_leave(_event):
+        btn["bg"] = bg
+
+    btn.bind("<Enter>", on_enter)
+    btn.bind("<Leave>", on_leave)
+    return btn

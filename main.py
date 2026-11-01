@@ -211,3 +211,96 @@ class SnakeGame:
                 json.dump({"high_score": score}, f)
         except OSError:
             pass  # Not fatal - the game just won't persist this time
+
+
+
+
+
+    # ------------------------------------------------------------------
+    # Screen switching helpers
+    # ------------------------------------------------------------------
+    def hide_all_frames(self):
+        for frame in (self.menu_frame, self.difficulty_frame,
+                      self.howto_frame, self.game_frame):
+            frame.pack_forget()
+
+    def show_main_menu(self):
+        self.running = False
+        self.stop_game_loop()
+        self.hide_all_frames()
+        self.update_score_labels()
+        self.menu_frame.pack(fill="both", expand=True)
+
+    def show_difficulty_screen(self):
+        self.hide_all_frames()
+        self.difficulty_frame.pack(fill="both", expand=True)
+
+    def show_howto_screen(self):
+        self.hide_all_frames()
+        self.howto_frame.pack(fill="both", expand=True)
+
+    def show_game_screen(self):
+        self.hide_all_frames()
+        self.game_frame.pack(fill="both", expand=True)
+
+    # ------------------------------------------------------------------
+    # Screen builders
+    # ------------------------------------------------------------------
+    def build_menu_screen(self):
+        wrapper = tk.Frame(self.menu_frame, bg=COLOR_BG)
+        wrapper.pack(expand=True)
+
+        tk.Label(wrapper, text="\U0001F40D Snake Game", font=FONT_TITLE,
+                 bg=COLOR_BG, fg=COLOR_ACCENT).pack(pady=(40, 5))
+        tk.Label(wrapper, text="Eat, grow and beat your high score!",
+                 font=FONT_SUBTITLE, bg=COLOR_BG, fg=COLOR_SUBTEXT).pack(pady=(0, 30))
+
+        make_button(wrapper, "Start Game", self.show_difficulty_screen).pack(pady=8)
+        make_button(wrapper, "How to Play", self.show_howto_screen).pack(pady=8)
+        make_button(wrapper, "Exit", self.on_close).pack(pady=8)
+
+        self.menu_high_score_label = tk.Label(
+            wrapper, text=f"High Score: {self.high_score}",
+            font=FONT_BODY, bg=COLOR_BG, fg=COLOR_SUBTEXT
+        )
+        self.menu_high_score_label.pack(pady=(30, 10))
+
+    def build_difficulty_screen(self):
+        wrapper = tk.Frame(self.difficulty_frame, bg=COLOR_BG)
+        wrapper.pack(expand=True)
+
+        tk.Label(wrapper, text="Select Difficulty", font=FONT_HEADING,
+                 bg=COLOR_BG, fg=COLOR_TEXT).pack(pady=(40, 25))
+
+        for level in ("Easy", "Medium", "Hard"):
+            make_button(
+                wrapper, level, lambda lvl=level: self.start_game(lvl)
+            ).pack(pady=8)
+
+        make_button(wrapper, "Back", self.show_main_menu,
+                    bg=COLOR_PANEL, hover_bg=COLOR_BUTTON_HOVER).pack(pady=(30, 10))
+
+    def build_howto_screen(self):
+        wrapper = tk.Frame(self.howto_frame, bg=COLOR_BG)
+        wrapper.pack(expand=True)
+
+        tk.Label(wrapper, text="How to Play", font=FONT_HEADING,
+                 bg=COLOR_BG, fg=COLOR_TEXT).pack(pady=(40, 20))
+
+        instructions = (
+            "\U0001F40D  Control the snake using Arrow Keys\n"
+            "      or W A S D.\n\n"
+            "\U0001F34E  Eat the food to grow.\n\n"
+            "\u2B50  Each food gives 10 points.\n\n"
+            "\U0001F4A5  Don't hit the wall.\n\n"
+            "\U0001F4A5  Don't hit your own body.\n\n"
+            "\U0001F3C6  Try to beat your high score!\n\n"
+            "Space = Pause / Resume"
+        )
+        tk.Label(wrapper, text=instructions, font=FONT_BODY, bg=COLOR_BG,
+                 fg=COLOR_TEXT, justify="left").pack(pady=(0, 25))
+
+        make_button(wrapper, "Back", self.show_main_menu).pack(pady=10)
+
+
+

@@ -49,10 +49,11 @@ MIN_WINDOW_HEIGHT = 780
 COLOR_BG = "#0f1117"
 COLOR_PANEL = "#171a24"
 COLOR_CARD_BORDER = "#2a3042"
-COLOR_TILE_A = "#141824"
-COLOR_TILE_B = "#181d2b"
-COLOR_BOARD_BORDER = "#262c3d"
-COLOR_SHADOW = "#07090e"
+COLOR_TILE_A = "#5e9a38"               # average grass colour (used for food glow)
+GRASS_DARK = (46, 92, 30)              # shaded / dense grass
+GRASS_LIGHT = (112, 158, 58)           # sunlit / dry grass
+COLOR_BOARD_BORDER = "#5b3a1e"         # soil-brown edge around the field
+COLOR_SHADOW = "#2f5a1d"               # shadows cast onto the grass
 
 COLOR_TEXT = "#eef1f7"
 COLOR_SUBTEXT = "#8b93a7"
@@ -65,14 +66,14 @@ COLOR_DANGER = "#ff5c6c"
 COLOR_GOLD = "#ffc94d"
 COLOR_OVERLAY_BG = "#000000"
 
-# ---- Snake (emerald python) ----
-SNAKE_OUTLINE = "#0c2a18"
-SNAKE_BASE = "#2f9e58"
-SNAKE_HEAD_BASE = "#36a862"
-SNAKE_HIGHLIGHT = "#86e0a2"
-SNAKE_PATTERN = "#16502d"
-SNAKE_PATTERN_RIM = "#b5cc5c"
-SNAKE_EYE = "#f2c94c"
+# ---- Snake (maroon python - warm dark red stands out against grass) ----
+SNAKE_OUTLINE = "#2a0609"
+SNAKE_BASE = "#7d1d2a"
+SNAKE_HEAD_BASE = "#8e2533"
+SNAKE_HIGHLIGHT = "#d88a94"
+SNAKE_PATTERN = "#3e0a12"
+SNAKE_PATTERN_RIM = "#f5c542"
+SNAKE_EYE = "#ffb02e"
 SNAKE_PUPIL = "#0a0a0a"
 SNAKE_TONGUE = "#e0344a"
 
@@ -680,16 +681,93 @@ class SnakeGame:
     # Drawing helpers
     # ------------------------------------------------------------------
     def draw_board_background(self):
-        """Draws a subtle checkerboard once, baked into a single image so it
-        costs almost nothing to repaint every frame."""
-        self.board_image = tk.PhotoImage(width=BOARD_SIZE, height=BOARD_SIZE)
-        self.board_image.put(COLOR_TILE_A, to=(0, 0, BOARD_SIZE, BOARD_SIZE))
-        for x in range(GRID_COUNT):
-            for y in range(GRID_COUNT):
-                if (x + y) % 2:
-                    self.board_image.put(COLOR_TILE_B, to=(
-                        x * CELL_SIZE, y * CELL_SIZE,
-                        (x + 1) * CELL_SIZE, (y + 1) * CELL_SIZE))
+        """Paints a natural-looking grass field once into a single image:
+        soft light/dark patches, thousands of individual blades and a few
+        tiny flowers. Built once and reused, so repainting is free."""
+        if getattr(self, "board_image", None) is not None:
+            self.canvas.create_image(0, 0, image=self.board_image, anchor="nw", tags="bg")
+            return
+        rng = random.Random(7)                     # fixed seed: same field every time
+        size = BOARD_SIZE
+
+        def value_noise(step):
+            """Smooth random field (0..1) with features about `step` px wide."""
+            n = size // step + 2
+            grid = [[rng.random() for _ in range(n)] for _ in range(n)]
+            out = []
+            for y in range(size):
+                gy, fy = divmod(y / step, 1)
+                gy = int(gy)
+                fy = fy * fy * (3 - 2 * fy)
+                r0, r1 = grid[gy], grid[gy + 1]
+                row = []
+                for x in range(size):
+                    gx, fx = divmod(x / step, 1)
+                    gx = int(gx)
+                    fx = fx * fx * (3 - 2 * fx)
+                    top = r0[gx] + (r0[gx + 1] - r0[gx]) * fx
+                    bot = r1[gx] + (r1[gx + 1] - r1[gx]) * fx
+                    row.append(top + (bot - top) * fy)
+                out.append(row)
+            return out
+
+        big = value_noise(90)
+        mid = value_noise(28)
+        dark, light = GRASS_DARK, GRASS_LIGHT
+
+        # Base colour: smooth patches + fine per-pixel grain
+        px = []
+        for y in range(size):
+            row = []
+            by, my = big[y], mid[y]
+            for x in range(size):
+                t = 0.62 * by[x] + 0.38 * my[x]
+                g = rng.randint(-9, 9)
+                row.append([dark[0] + (light[0] - dark[0]) * t + g,
+                            dark[1] + (light[1] - dark[1]) * t + g,
+                            dark[2] + (light[2] - dark[2]) * t + g * 0.5])
+            px.append(row)
+
+        # Individual blades: thin, slightly curved strokes, shadowed at the
+        # root and catching light at the tip; some are drier/yellower.
+        for _ in range(size * size // 9):
+            x0 = rng.uniform(0, size)
+            y0 = rng.uniform(0, size)
+            length = rng.randint(4, 10)
+            lean = rng.uniform(-0.45, 0.45)
+            bend = rng.uniform(-0.04, 0.04)
+            dry = rng.random() < 0.12
+            for k in range(length):
+                y = int(y0 - k)
+                x = int(x0 + lean * k + bend * k * k)
+                if not (0 <= x < size and 0 <= y < size):
+                    break
+                f = k / (length - 1)
+                shade = -30 + 52 * f
+                c = px[y][x]
+                c[0] += shade + (16 if dry else 0)
+                c[1] += shade + (8 if dry else 3)
+                c[2] += shade * 0.45
+
+        # A few tiny wildflowers
+        for _ in range(18):
+            x0 = rng.randrange(2, size - 2)
+            y0 = rng.randrange(2, size - 2)
+            petal = rng.choice(([245, 245, 235], [250, 225, 100], [225, 180, 230]))
+            for dx, dy in ((0, -1), (-1, 0), (1, 0), (0, 1)):
+                px[y0 + dy][x0 + dx] = list(petal)
+            px[y0][x0] = [235, 180, 50]
+
+        def clamp(v):
+            v = int(v)
+            return 0 if v < 0 else 255 if v > 255 else v
+
+        data = " ".join(
+            "{" + " ".join("#%02x%02x%02x" % (clamp(r), clamp(g), clamp(b))
+                           for r, g, b in row) + "}"
+            for row in px)
+        self.board_image = tk.PhotoImage(width=size, height=size)
+        self.board_image.put(data, to=(0, 0))
         self.canvas.create_image(0, 0, image=self.board_image, anchor="nw", tags="bg")
 
     # ------------------------------------------------------------------
